@@ -20,6 +20,10 @@ export class RenderSankey extends MarkdownRenderChild {
 
     display(): void {
         this.containerEl.empty();
-        this.containerEl.appendChild(createSankey(this.source, this.plugin.settings));
+        try {
+            this.containerEl.appendChild(createSankey(this.source, this.plugin.settings));
+        } catch (e) {
+            this.containerEl.createEl('p', { text: `Sankey error: ${e.message}` });
+        }
     }
 }
