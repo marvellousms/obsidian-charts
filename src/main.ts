@@ -52,26 +52,68 @@ interface SankeyData {
 }
 
 /**
- * Prepares and validates the nodes
- * @param data Sankey links and nodes
+ * Resolves links with value '?' by propagating known values through the graph.
+ * A '?' link can be resolved at a node if all other links on one side are known
+ * and the opposite side is fully known (conservation of flow).
+ * Throws if any '?' values remain unresolvable or if a resolved value is negative.
+ */
+function resolveUnknownLinks(data: SankeyData): void {
+    const unknownLinks = new Set<SLink>();
+    for (const link of data.links) {
+        if ((link.value as unknown) === '?') {
+            unknownLinks.add(link);
+            link.value = 0;
+        }
+    }
+
+    if (unknownLinks.size === 0) return;
+
+    let progress = true;
+    while (progress) {
+        progress = false;
+        for (const node of data.nodes) {
+            const inLinks = data.links.filter(l => l.target === node.name);
+            const outLinks = data.links.filter(l => l.source === node.name);
+            const unknownIn = inLinks.filter(l => unknownLinks.has(l));
+            const unknownOut = outLinks.filter(l => unknownLinks.has(l));
+
+            let resolved: number | null = null;
+            let resolvedLink: SLink | null = null;
+
+            if (unknownIn.length === 1 && unknownOut.length === 0 && outLinks.length > 0) {
+                const knownInSum = inLinks.filter(l => !unknownLinks.has(l)).reduce((s, l) => s + l.value, 0);
+                const outSum = outLinks.reduce((s, l) => s + l.value, 0);
+                resolved = outSum - knownInSum;
+                resolvedLink = unknownIn[0];
+            } else if (unknownOut.length === 1 && unknownIn.length === 0 && inLinks.length > 0) {
+                const inSum = inLinks.reduce((s, l) => s + l.value, 0);
+                const knownOutSum = outLinks.filter(l => !unknownLinks.has(l)).reduce((s, l) => s + l.value, 0);
+                resolved = inSum - knownOutSum;
+                resolvedLink = unknownOut[0];
+            }
+
+            if (resolved !== null && resolvedLink !== null) {
+                if (resolved < 0) {
+                    throw new Error(`Resolved link value is negative (${resolved}) at node "${node.name}" — check that values are consistent.`);
+                }
+                resolvedLink.value = resolved;
+                unknownLinks.delete(resolvedLink);
+                progress = true;
+            }
+        }
+    }
+
+    if (unknownLinks.size > 0) {
+        throw new Error(`Cannot resolve ${unknownLinks.size} unknown link value(s): not enough constraints. Each '?' must be the only unknown at one side of a node.`);
+    }
+}
+
+/**
+ * Assigns colors to nodes that don't have one.
  */
 function prepareNodes(data: SankeyData): void {
     data.nodes.forEach((node) => {
-        //Verify or add node color
         verifyColorOrRandom(node);
-
-        //Calculate node value
-        let input = 0;
-        let output = 0;
-        data.links.forEach((link) => {
-            if (link.target == node.name) {
-                input += link.value;
-            }
-            if (link.source == node.name) {
-                output += link.value;
-            }
-        });
-        node.value = Math.max(input, output)
     });
 }
 
@@ -120,7 +162,8 @@ function linkColor(link: SLink, linkColor: string): string {
 }
 
 export function createSankey(source: string, settings: SankeySettings): SVGSVGElement {
-    const yamlData = parseYaml(source) as YamlData;
+    const preprocessed = source.replace(/(\bvalue:\s*)\?(\s*(?:#.*)?$)/gm, "$1'?'$2");
+    const yamlData = parseYaml(preprocessed) as YamlData;
     const sankeyData = parseSankeyData(yamlData);
 
     return generateSVG(sankeyData, settings);
@@ -147,6 +190,7 @@ function parseSankeyData(yamlData: YamlData): SankeyData {
         }
     });
 
+    resolveUnknownLinks(sankeyData);
     prepareNodes(sankeyData);
 
     return sankeyData;
