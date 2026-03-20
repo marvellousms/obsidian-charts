@@ -197,28 +197,43 @@ function parseSankeyData(yamlData: YamlData): SankeyData {
 }
 
 function generateSVG(data: SankeyData, settings: SankeySettings): SVGSVGElement {
-    const dimensions = {
-        height: 600,
-        width: 900,
-        margins: 10
-    }
-
-    // Create Sankey generator
+    // Calculate width based on number of node columns
+    // Find the maximum x-position to determine how many columns we have
     const generator = d3san.sankey()
         .nodes(data.nodes)
         .links(data.links)
         .nodeAlign(nodeAlign[settings.nodeAlign])
         .nodeWidth(settings.nodeWidth)
         .extent([
-            [dimensions.margins, dimensions.margins],
+            [10, 10],
             [
-                dimensions.width - dimensions.margins * 2,
-                dimensions.height - dimensions.margins * 2
+                900,
+                580
             ]
         ])
         .nodeId((d) => (d as SNode).name)
         .nodePadding(settings.nodePadding);
 
+    generator(data);
+
+    // Calculate proper dimensions based on layout
+    const maxX = Math.max(...data.nodes.map(n => n.x1 || 0));
+    const dimensions = {
+        height: 600,
+        width: Math.max(900, maxX + 200), // Add 200px buffer for text labels
+        margins: 10
+    }
+
+    // Re-run layout with correct dimensions
+    generator
+        .extent([
+            [dimensions.margins, dimensions.margins],
+            [
+                dimensions.width - dimensions.margins * 2,
+                dimensions.height - dimensions.margins * 2
+            ]
+        ]);
+    
     generator(data);
 
     //Create SVG
