@@ -118,39 +118,6 @@ function prepareNodes(data: SankeyData): void {
 }
 
 /**
- * Assigns status-based colors to nodes based on their name.
- * @param node Node to color
- * @returns true if a status color was applied, false otherwise
- */
-function applyStatusColor(node: SNode): boolean {
-    const name = (node.name || '').toLowerCase();
-    
-    // Status-based color mapping
-    if (name.includes('original') || name.includes('start') || name.includes('source')) {
-        node.color = '#808080'; // Gray
-        return true;
-    }
-    if (name.includes('pending') || name.includes('waiting') || name.includes('in progress')) {
-        node.color = '#ffa500'; // Orange
-        return true;
-    }
-    if (name.includes('rejected') || name.includes('failed') || name.includes('denied')) {
-        node.color = '#ff4444'; // Red
-        return true;
-    }
-    if (name.includes('retry') || name.includes('needs retry') || name.includes('error')) {
-        node.color = '#ffd700'; // Yellow/Gold
-        return true;
-    }
-    if (name.includes('success') || name.includes('accepted') || name.includes('hired')) {
-        node.color = '#44ff44'; // Green
-        return true;
-    }
-    
-    return false;
-}
-
-/**
  * Checks wheter a string is a valid css color.
  * @param color CSS color string to verify
  * @returns The verified color or a random color
@@ -164,11 +131,6 @@ function verifyColorOrRandom(node: SNode): SNode {
             node.color = d3.rgb(node.color).toString();
             return node;
         }
-    }
-
-    // Try status-based coloring first
-    if (applyStatusColor(node)) {
-        return node;
     }
 
     //No valid color -> Add random color
