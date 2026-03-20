@@ -236,10 +236,12 @@ function generateSVG(data: SankeyData, settings: SankeySettings): SVGSVGElement 
     
     generator(data);
 
-    //Create SVG
+    //Create SVG with viewBox for proper scaling
     const svg = d3.create('svg')
+        .attr("viewBox", `0 0 ${dimensions.width} ${dimensions.height}`)
         .attr("height", dimensions.height)
-        .attr("width", dimensions.width)
+        .attr("width", "100%")
+        .attr("preserveAspectRatio", "xMidYMid meet")
         .attr("overflow", "visible")
         .attr("class", "sankey-diagram")
         .style('background', 'transparent');
