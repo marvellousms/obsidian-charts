@@ -25,10 +25,10 @@ interface SankeySettings {
 }
 
 const DEFAULT_SETTINGS: Partial<SankeySettings> = {
-    nodeWidth: 40,
-    linkColor: 'none',
+    nodeWidth: 5,
+    linkColor: 'target',
     nodeAlign: 'left',
-    nodePadding: 16
+    nodePadding: 10
 };
 
 const nodeAlign: Record<string, (node: d3san.SankeyNode<{}, {}>, n: number) => number> = {
