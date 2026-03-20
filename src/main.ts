@@ -154,7 +154,7 @@ function linkColor(link: SLink, linkColor: string): string {
             break;
 
         default:
-            color = 'black';
+            color = 'var(--text-muted)';
             break;
     }
 
@@ -226,7 +226,8 @@ function generateSVG(data: SankeyData, settings: SankeySettings): SVGSVGElement 
         .attr("height", dimensions.height)
         .attr("width", dimensions.width)
         .attr("overflow", "visible")
-        .style('background', 'white');
+        .attr("class", "sankey-diagram")
+        .style('background', 'transparent');
 
     // Add nodes
     svg.append("g")
@@ -259,6 +260,8 @@ function generateSVG(data: SankeyData, settings: SankeySettings): SVGSVGElement 
         .attr("y", d => (d.y1! + d.y0!) / 2)
         .attr("dy", "0.35em")
         .attr("text-anchor", d => d.x0! < dimensions.width / 2 ? "start" : "end")
+        .attr("fill", 'var(--text-normal)')
+        .style("font-size", "12px")
         .text(d => `${d.name}: ${d.value}`);
 
     return svg.node()!;
